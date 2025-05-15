@@ -71,8 +71,8 @@ class LoadingScreen:
         # Configure window appearance for maximum visibility
         self.top.configure(bg="#FFD700")  # Bright gold background
         
-        # Make it stay on top with multiple techniques
-        self.top.attributes('-topmost', True)  
+        # Make it stay on top but don't make it modal
+        self.top.attributes('-topmost', False)  # Change to False to allow other windows to appear on top
         self.top.lift()
         
         # Prevent the window from being minimized or closed
@@ -84,9 +84,10 @@ class LoadingScreen:
                           highlightcolor="red", 
                           highlightthickness=5)
         
-        # Ensure the window is modal
+        # Make the window transient but not modal
         self.top.transient(parent)
-        self.top.grab_set()
+        # Explicitly do NOT use grab_set to allow other dialogs to function
+        self.has_grab = False
         
         # Center the window on screen
         self.center_window()
@@ -103,15 +104,13 @@ class LoadingScreen:
         # Start border flashing
         self.flash_border()
         
-        # Force visibility with multiple techniques
-        for _ in range(20):  # More update cycles
+        # Force visibility without grabbing focus
+        for _ in range(5):  # Fewer update cycles to avoid potential issues
             try:
                 self.top.update()
-                self.top.lift()
-                self.top.attributes('-topmost', True)
-                self.top.focus_force()
-                self.top.grab_set()  # Keep reinforcing grab
-            except:
+                # Don't try to grab focus or set topmost - allow other dialogs to appear
+            except Exception as e:
+                print(f"Error during update cycle: {e}")
                 pass
     
     def center_window(self):
@@ -237,14 +236,8 @@ class LoadingScreen:
             if hasattr(self, 'progress') and self.progress.winfo_exists():
                 self.progress.stop()
             
-            # Release grab before destroying
+            # Now destroy the window - no need to release grab since we're not using it
             if hasattr(self, 'top') and self.top.winfo_exists():
-                try:
-                    self.top.grab_release()
-                except:
-                    pass
-                
-                # Now destroy the window
                 self.top.destroy()
                 
             # Make sure parent is shown
@@ -252,14 +245,14 @@ class LoadingScreen:
                 try:
                     self.parent.deiconify()
                     self.parent.update()
-                except:
+                except Exception as e:
+                    print(f"Error showing parent window: {e}")
                     pass
         except Exception as e:
             print(f"Error closing loading screen: {e}")
             # If anything fails, try a more direct approach
             try:
                 if hasattr(self, 'top') and self.top.winfo_exists():
-                    self.top.grab_release()
                     self.top.destroy()
             except:
                 pass
@@ -593,18 +586,16 @@ class DecoPressApp:
             # Show loading screen with a more direct approach
             loading_screen = LoadingScreen(self.root)
             
-            # Process events to ensure UI updates
-            for _ in range(20):  # More update cycles
+            # Process events to let UI update, but don't try to force focus
+            for _ in range(5):  # Fewer update cycles
                 try:
-                    # Update both windows
-                    loading_screen.top.update()
-                    loading_screen.top.lift()
-                    loading_screen.top.attributes('-topmost', True)
-                    loading_screen.top.focus_force()
+                    # Update window without forcing focus
+                    loading_screen.top.update_idletasks()
                     
                     # Process UI events
                     self.root.update_idletasks()
-                except:
+                except Exception as e:
+                    print(f"Error during initial loading screen update: {e}")
                     pass
             
             # Now run the task directly (not in a thread)
@@ -614,10 +605,20 @@ class DecoPressApp:
                 # Keep refreshing the loading screen while running the task
                 def keep_alive():
                     try:
-                        loading_screen.top.lift()
-                        loading_screen.top.update()
-                        loading_screen.top.after(100, keep_alive)
-                    except:
+                        # Only update if the window still exists
+                        if hasattr(loading_screen, 'top') and loading_screen.top.winfo_exists():
+                            # Don't lift or try to take focus
+                            try:
+                                loading_screen.top.update()
+                            except Exception as e:
+                                print(f"Error updating loading screen: {e}")
+                            # Schedule the next update
+                            try:
+                                loading_screen.top.after(100, keep_alive)
+                            except Exception as e:
+                                print(f"Error scheduling next keep_alive: {e}")
+                    except Exception as e:
+                        print(f"Error in keep_alive: {e}")
                         pass
                 
                 # Start the keep-alive function
@@ -673,18 +674,16 @@ class DecoPressApp:
             # Show loading screen with a more direct approach
             loading_screen = LoadingScreen(self.root)
             
-            # Process events to ensure UI updates
-            for _ in range(20):  # More update cycles
+            # Process events to let UI update, but don't try to force focus
+            for _ in range(5):  # Fewer update cycles
                 try:
-                    # Update both windows
-                    loading_screen.top.update()
-                    loading_screen.top.lift()
-                    loading_screen.top.attributes('-topmost', True)
-                    loading_screen.top.focus_force()
+                    # Update window without forcing focus
+                    loading_screen.top.update_idletasks()
                     
                     # Process UI events
                     self.root.update_idletasks()
-                except:
+                except Exception as e:
+                    print(f"Error during initial loading screen update: {e}")
                     pass
             
             # Now run the task directly (not in a thread)
@@ -692,10 +691,20 @@ class DecoPressApp:
                 # Keep refreshing the loading screen while running the task
                 def keep_alive():
                     try:
-                        loading_screen.top.lift()
-                        loading_screen.top.update()
-                        loading_screen.top.after(100, keep_alive)
-                    except:
+                        # Only update if the window still exists
+                        if hasattr(loading_screen, 'top') and loading_screen.top.winfo_exists():
+                            # Don't lift or try to take focus
+                            try:
+                                loading_screen.top.update()
+                            except Exception as e:
+                                print(f"Error updating loading screen: {e}")
+                            # Schedule the next update
+                            try:
+                                loading_screen.top.after(100, keep_alive)
+                            except Exception as e:
+                                print(f"Error scheduling next keep_alive: {e}")
+                    except Exception as e:
+                        print(f"Error in keep_alive: {e}")
                         pass
                 
                 # Start the keep-alive function

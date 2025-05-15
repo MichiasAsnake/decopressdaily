@@ -550,7 +550,7 @@ def scrape_orders(page):
                     
                     # Check for applique
                     has_pa = has_paplique(process_codes)
-                    
+                        
                     job_status = get_clean_text(row.query_selector("td:nth-child(4)"))
                     # Keep only text after hyphen if it exists
                     if " - " in job_status:
